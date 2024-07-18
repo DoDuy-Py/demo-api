@@ -1,0 +1,19 @@
+--------- FAST API ----------
+run: uvicorn main:app --host 127.0.0.1 --port 8000
+
+____________________DOCUMENT FAST API________________________
+** SETUP
+pip install fastapi uvicorn sqlalchemy psycopg2-binary alembic
+
+-- SETUP DB
+- init alembic: alembic init alembic ( để quản lý migrate )
+- Sửa file alembic.ini: sqlalchemy.url = postgresql://username:password@localhost/dbname
+- Sửa file env.py trong alembic ( Copy ):
+	sys.path.append(os.path.join(os.path.dirname(__file__), '..')) // Cái này để chỉ định source bắt đầu từ Project
+	from models.models import Base  # Import Base từ models
+	from core.settings import get_db  # Import get_db từ database
+- Tạo file .env và cấu hình db trong file core/settings.py
+- Còn lại code giống Project demo-api 
+
+** Tạo file makemigrations: alembic revision --autogenerate -m "Initial migration"
+** Migrate: alembic upgrade head

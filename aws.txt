@@ -1,0 +1,91 @@
+** AWS Lambda là gì?:
+ - Là một dịch dụ điện toán dùng để viết code backend API trực tiếp trên AWS mà không cần server.
+ 
+** API GateWay là gì?
+ - Là một dịch vụ cho phép tạo các API. Dùng để cấu hình các resource, endpoint cho AWS Lambda.
+ 
+** Luồng hoạt động:
+ - API GateWay nhận request từ client -> xác thực request -> ánh xạ đến Lambda function để xử lý thông qua event ( event chứa các thông tin http request như: headers, path params, query string, body ) -> Lambda nhận event và xử lý và trả về respones -> API GetWay nhận response từ AWS Lambda và có thể xử lý bổ sung trước khi response cho client.
+ 
+ ** Tóm tắt: Client -> API GateWay -> AWS Lambda -> API GateWay -> Client.
+ API GateWay giống router phân chia các request đển api url nào.
+ AWS Lambda giống các method xử lý khi nhận được request thông qua biến event.
+ 
+ ** Configure AWS và khởi tạo Project:
+ pip install awscli
+ aws configure (config ASSCESS KEY,...)
+ npm install -g serverless
+ serverless create --template aws-python3 --path my-project
+ cd my-project
+ 
+ ** debug lauch.json 
+ {
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "debugLambda",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "${workspaceFolder}/template.yaml",
+                "logicalId": "FunctionName"
+            },
+            "lambda": {
+                "payload": {
+                    "json": {}
+                }
+            }
+        }
+    ]
+}
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+*** Day 2: 16/07/2024 
+** Cấu hình AWS + Django ( Search chatGpt )
+- Dùng Zappa
+- Cài đặt zappa: pip install zappa
+- Khởi tạo và lựa chọn thông số Django phù hợp: zappa init ( để tạo ra file môi trường production, staging, development,... ở file zappa_settings.json )
+- Triển khai ứng dụng Django lên AWS Lambda: zappa deploy production
+- Cập nhật khi có thay đổi: zappa update production
+check log: zappa tail production
+
+* API Url vẫn giữ nguyên domain sẽ là: https://{restapi_id}.execute-api.{region}.amazonaws.com/{stage_name}/
+- Lấy thay endpoint của API GateWay: zappa status production
+
+* Cấu hình database Django + AWS
+- Tạo cơ sở dữ liệu trên AWS RDS ( cách làm search gg )
+- Cấu hình db trong zappa_settings.json:
+{
+    "production": {
+        "aws_region": "us-west-2",
+        "s3_bucket": "your-s3-bucket-name",
+        "django_settings": "your_project.settings",
+        "profile_name": "default",
+        "environment_variables": {
+            "DATABASE_NAME": "your_db_name",
+            "DATABASE_USER": "your_db_user",
+            "DATABASE_PASSWORD": "your_db_password",
+            "DATABASE_HOST": "your_db_host", # Ví dụ: 'your-db-instance-name.rds.amazonaws.com'
+            "DATABASE_PORT": "your_db_port" # 5432
+        }
+    }
+}
+- Cấu hình trong settings.py của Django
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',  # hoặc 'django.db.backends.mysql' nếu bạn dùng MySQL
+        'NAME': os.environ.get('DATABASE_NAME'),
+        'USER': os.environ.get('DATABASE_USER'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
+        'HOST': os.environ.get('DATABASE_HOST'),
+        'PORT': os.environ.get('DATABASE_PORT'),
+    }
+}
+
+** Tóm lại
+- Tạo và cấu hình cơ sở dữ liệu RDS trên AWS.
+- Cập nhật cấu hình cơ sở dữ liệu trong settings.py của Django để sử dụng thông tin RDS.
+- Đảm bảo quyền truy cập từ AWS Lambda đến cơ sở dữ liệu RDS thông qua nhóm bảo mật.
+- Quản lý các biến môi trường trong zappa_settings.json và sử dụng chúng trong settings.py.
