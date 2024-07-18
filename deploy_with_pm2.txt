@@ -1,0 +1,52 @@
+##########################################################################
+############################ DEPLOY WITH PM2 #############################
+##########################################################################
+
+1. Mặc định là đã cài đặt môi trường ( đã làm từ trước )
+2. Tạo file deploy.sh để tự động deploy bằng lệnh: ./deploy.sh (có thể đẩy lên bằng fileClient hoặc SSH vào server)
+	#!/bin/bash
+
+	# Dừng và xóa các process PM2 đang chạy để chuẩn bị triển khai lại
+	pm2 stop all
+	pm2 delete all
+
+	# Di chuyển đến thư mục chứa frontend (Angular) và cài đặt lại các dependencies
+	cd /path/to/your/angular/project
+	npm install
+
+	# Di chuyển đến thư mục chứa backend (Django) và cài đặt lại các dependencies
+	cd /path/to/your/django/project
+	if [ ! -d "venv" ]; then
+        echo "Create venv for Django and Activate venv."
+        python3.8 -m venv venv
+		source venv/bin/activate
+	else
+		echo "venv exists. Activate venv"
+		source venv/bin/activate
+    fi
+	pip install -r requirements.txt
+
+	# Khởi động lại frontend (Angular) bằng PM2 với tên là "frontend"
+	# pm2 start npm --name "frontend" -- start
+	# Chạy pm2 serve để phục vụ các file tĩnh
+    pm2 serve "/path/to/your/angular/dist" --name frontend --port 4000 --spa
+	pm2 save
+
+	# Khởi động lại backend (Django) bằng PM2 với tên là "backend"
+	cd /path/to/your/django/project
+	
+	# Chạy các bước makemigrations và migrate
+	python manage.py makemigrations
+	python manage.py migrate
+	python manage.py collectstatic
+
+	# Khởi động lại backend (Django)
+	pm2 start python --name "backend" -- python manage.py runserver 8000
+	pm2 save
+	
+	echo "Deployment finished."
+3. pm2 reload backend - pm2 reload frontend để reload lại theo name trong file deploy.sh hoặc 1 - 2 theo thứ tự procces
+4. pm2 log name để xem log tương ứng với procces
+
+** Chú ý: Cái này chỉ để test nếu muốn production thì dùng "nginx" xem hướng dẫn tại file "deploy_production.txt"
+@by: duyy.dv@gmail.com
